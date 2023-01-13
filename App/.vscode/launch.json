@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            //https://businesscentral.dynamics.com/e68f8113-76a9-48ba-8144-5a99fe0c671c/Sandbox
+            "name": "SLP - Sandbox",
+            "request": "launch",
+            "type": "al",
+            "environmentType": "Sandbox",
+            "environmentName": "sandbox",
+            "tenant": "e68f8113-76a9-48ba-8144-5a99fe0c671c",
+            "startupObjectId": 42,
+            "startupObjectType": "Page",
+            "breakOnError": true,
+            "launchBrowser": false,
+            "enableLongRunningSqlStatements": true,
+            "enableSqlInformationDebugger": true,
+            // "schemaUpdateMode":"ForceSync"
+        },
+    ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "cb7be64a-689b-4f71-bfff-3bd3b81104a9",
+  "name": "SLP Custom Functionality",
+  "publisher": "Withum Smith & Brown",
+  "version": "21.0.1.0",
+  "brief": "Provides custom functionality for Strategic Legal Practices APC.",
+  "description": "Provides custom functionality for Strategic Legal Practices, APC.",
+  "privacyStatement": "http://www.withum.com/",
+  "EULA": "http://www.withum.com/",
+  "help": "http://www.withum.com/",
+  "url": "http://www.withum.com/",
+  "logo": "./logo/WithumLogo.jpg",
+  "dependencies": [
+    {
+      "id": "760fc3a0-ddab-43aa-93a5-6430f34f1b76",
+      "publisher": "Plumbline Consulting LLC",
+      "name": "Progressus Software",
+      "version": "9.4.0.7"
+    }
+  ],
+  "screenshots": [],
+  "platform": "21.0.0.0",
+  "application": "21.0.0.0",
+  "idRanges": [
+    {
+      "from": 50100,
+      "to": 50199
+    }
+  ],
+  "contextSensitiveHelpUrl": "https://withum.com/help/",
+  "showMyCode": true,
+  "features": ["TranslationFile"],
+  "runtime": "8.0",
+  "target": "Cloud"
+}
