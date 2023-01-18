@@ -1,8 +1,8 @@
-report 50101 "WSB SLP Matter Summary"
+report 50101 "WSB SLP Case List Summary"
 {
-    Caption = 'Matter Summary';
+    Caption = 'Case List Summary';
     DefaultLayout = Word;
-    WordLayout = '.\Objects\Reports\Layouts\MatterSummary.docx';
+    WordLayout = '.\Objects\Reports\Layouts\CaseListSummary.docx';
 
     dataset
     {

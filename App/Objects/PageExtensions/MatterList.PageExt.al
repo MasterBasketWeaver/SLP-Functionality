@@ -4,10 +4,10 @@ pageextension 50101 "WSB SLP Matter List" extends "Project List (PGS)"
     {
         addafter("Project Profitability")
         {
-            action("WSB SLP Matter Summary")
+            action("WSB SLP Case List Summary")
             {
                 ApplicationArea = All;
-                Caption = 'Matter Summary';
+                Caption = 'Case List Summary';
                 Image = PrintInstallment;
                 Promoted = true;
                 PromotedCategory = Category6;
@@ -16,7 +16,7 @@ pageextension 50101 "WSB SLP Matter List" extends "Project List (PGS)"
                 trigger OnAction()
                 var
                     Job: Record Job;
-                    MatterSummary: Report "WSB SLP Matter Summary";
+                    MatterSummary: Report "WSB SLP Case List Summary";
                 begin
                     if Rec.GetFilter("No.") <> '' then
                         Job.SetFilter("No.", Rec.GetFilter("No."))
