@@ -26,6 +26,28 @@ pageextension 50101 "WSB SLP Matter List" extends "Project List (PGS)"
                     MatterSummary.RunModal();
                 end;
             }
+            action("WSB SLP Resource Time Summary")
+            {
+                ApplicationArea = All;
+                Caption = 'Resource Time Summary';
+                Image = PrintInstallment;
+                Promoted = true;
+                PromotedCategory = Category6;
+                PromotedIsBig = false;
+
+                trigger OnAction()
+                var
+                    Job: Record Job;
+                    ResourceSummary: Report "WSB SLP Resource Time Summary";
+                begin
+                    if Rec.GetFilter("No.") <> '' then
+                        Job.SetFilter("No.", Rec.GetFilter("No."))
+                    else
+                        Job.SetRange("No.", Rec."No.");
+                    ResourceSummary.SetTableView(Job);
+                    ResourceSummary.RunModal();
+                end;
+            }
         }
     }
 }
