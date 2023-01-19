@@ -16,6 +16,18 @@
       "publisher": "Plumbline Consulting LLC",
       "name": "Progressus Software",
       "version": "9.4.0.7"
+    },
+    {
+      "id": "770fc3a0-ddab-43aa-93a5-6430f34f1b77",
+      "publisher": "Plumbline Consulting LLC",
+      "name": "Progressus (US)",
+      "version": "9.4.0.1"
+    },
+    {
+      "id": "698b7fed-715e-4cc7-821f-9bd5de367c71",
+      "publisher": "pryme",
+      "name": "pryme Matters",
+      "version": "2.1.0.0"
     }
   ],
   "screenshots": [],

@@ -7,80 +7,70 @@ report 50102 "WSB SLP Resource Time Summary"
     dataset
     {
 
+        dataitem(Matter; Job)
+        {
+            RequestFilterFields = "No.";
+
+            trigger OnPreDataItem()
+            begin
+                CurrReport.Break();
+            end;
+        }
+
         dataitem(Resource; Resource)
         {
             RequestFilterFields = "No.";
 
-
-            dataitem("Job Ledger Entry"; "Job Ledger Entry")
-            {
-
-                trigger OnPreDataItem()
-                begin
-                    SetRange("No.", Resource."No.");
-                    SetRange(Type, Type::Resource);
-                    SetRange("Entry Type", "Entry Type"::Usage);
-                    // SetRange(matter);
-                end;
-
-                trigger OnAfterGetRecord()
-                begin
-
-                end;
-            }
-        }
-
-        dataitem(Job; Job)
-        {
-            RequestFilterFields = "No.";
             column(CurrDateTime; CurrentDateTime()) { }
             column(CompanyName; CompInfo.Name) { }
 
+
             trigger OnAfterGetRecord()
             var
-                JobTask: Record "Job Task";
-                JobFeeAmt, JobCostAmt, JobTime : Decimal;
-                JobList: List of [Decimal];
+                ProjectEntry: Record "Proj Detailed Led Entry (PGS)";
                 NameList: List of [Text];
+                JobList: List of [Decimal];
+                ResourceFeeAmt, ResourceQty : Decimal;
             begin
-                JobTask.SetRange("Job No.", Job."No.");
-                JobTask.SetRange("Job Task Type", JobTask."Job Task Type"::Posting);
 
-                if JobTask.FindSet() then
+
+                ProjectEntry.SetCurrentKey("Project No.", "Project Task No.", "Amount Type", "Entry Type", Positive, Chargeable, Type, "No.", "Resource Group No.", "Resource Sub Group No.", "Global Dimension 1 Code", "Global Dimension 2 Code", Payment, Expense, "Posting Date");
+                if Matter.GetFilter("No.") <> '' then
+                    ProjectEntry.SetFilter("Project No.", Matter.GetFilter("No."));
+                ProjectEntry.SetRange("Entry Type", ProjectEntry."Entry Type"::Usage);
+                ProjectEntry.SetRange(Type, ProjectEntry.Type::Resource);
+                ProjectEntry.SetRange("No.", Resource."No.");
+
+                if ProjectEntry.FindSet() then
                     repeat
-                        JobTask.CalcFields("Total Usage Price (LCY) PGS", "Total Usage Cost (LCY) PGS", "Resource Usage Qty. PGS");
-                        JobFeeAmt += JobTask."Total Usage Price (LCY) PGS";
-                        JobCostAmt += JobTask."Total Usage Cost (LCY) PGS";
-                        JobTime += JobTask."Resource Usage Qty. PGS";
-                    until JobTask.Next() = 0;
-                TotalFees += JobFeeAmt;
-                TotalCosts += JobCostAmt;
-                TotalQty += JobTime;
+                        ResourceFeeAmt += ProjectEntry."Total Price (LCY)";
+                        ResourceQty += ProjectEntry.Quantity;
+                    until ProjectEntry.Next() = 0
+                else
+                    CurrReport.Skip();
+
+                TotalFees += ResourceFeeAmt;
+                TotalQty += ResourceQty;
 
                 Index += 1;
-                JobList.Add(JobFeeAmt);
-                JobList.Add(JobCostAmt);
-                JobList.Add(JobTime);
+                JobList.Add(ResourceFeeAmt);
+                JobList.Add(ResourceQty);
                 Values.Add(Index, JobList);
 
-                NameList.Add(Job."No.");
-                NameList.Add(Job."Sell-to Customer Name");
+                NameList.Add(Resource."No.");
+                NameList.Add(Resource.Name);
                 Names.Add(Index, NameList);
             end;
         }
 
-        dataitem(Matters; Integer)
+
+        dataitem(ResourceDisplay; Integer)
         {
-            column(MatterNo; DisplayNo) { }
-            column(MatterName; DisplayName) { }
-            column(MatterFees; DisplayFee) { }
-            column(MatterCosts; DisplayCost) { }
-            column(MatterTimes; DisplayQty) { }
-            column(MatterTotal; DisplayFee + DisplayCost) { }
-            column(FeePercent; DisplayFeePer) { }
-            column(TimePercent; DisplayTimePer) { }
-            column(TotalPercent; DisplayTotalPer) { }
-            column(CostPercent; DisplayCostPer) { }
+            column(DisplayNo; DisplayNo) { }
+            column(DisplayName; DisplayName) { }
+            column(ResourceExp; DisplayFee) { }
+            column(ResourceTime; DisplayQty) { }
+            column(ResourceTotal; DisplayFee + DisplayQty) { }
 
             trigger OnPreDataItem()
             begin
@@ -89,40 +79,16 @@ report 50102 "WSB SLP Resource Time Summary"
 
             trigger OnAfterGetRecord()
             var
-                NameList: List of [Text];
                 JobList: List of [Decimal];
-                Total: Decimal;
+                NameList: List of [Text];
             begin
-                FeePercent := 0;
-                TimePercent := 0;
-                CostPercent := 0;
-                TotalPercent := 0;
-                DisplayFeePer := '';
-                DisplayTimePer := '';
-                DisplayCostPer := '';
-                DisplayTotalPer := '';
-
-                Values.Get(Number, JobList);
-                JobList.Get(1, DisplayFee);
-                JobList.Get(2, DisplayCost);
-                JobList.Get(3, DisplayQty);
-                if TotalFees <> 0 then
-                    FeePercent := DisplayFee / TotalFees * 100;
-                if TotalQty <> 0 then
-                    TimePercent := DisplayQty / TotalQty * 100;
-                if TotalCosts <> 0 then
-                    CostPercent := DisplayCost / TotalCosts * 100;
-                Total := TotalFees + TotalCosts;
-                if Total <> 0 then
-                    TotalPercent := (DisplayFee + DisplayCost) / (Total) * 100;
-                DisplayFeePer := StrSubstNo('%1%', Round(FeePercent, 0.01));
-                DisplayTimePer := StrSubstNo('%1%', Round(TimePercent, 0.01));
-                DisplayCostPer := StrSubstNo('%1%', Round(CostPercent, 0.01));
-                DisplayTotalPer := StrSubstNo('%1%', Round(TotalPercent, 0.01));
-
                 Names.Get(Number, NameList);
                 NameList.Get(1, DisplayNo);
                 NameList.Get(2, DisplayName);
+
+                Values.Get(Number, JobList);
+                JobList.Get(1, DisplayFee);
+                JobList.Get(2, DisplayQty);
             end;
         }
 
@@ -130,9 +96,8 @@ report 50102 "WSB SLP Resource Time Summary"
         {
             DataItemTableView = sorting(Number) where(Number = const(1));
 
-            column(TotalCosts; TotalCosts) { }
             column(TotalFees; TotalFees) { }
-            column(TotalTotal; TotalFees + TotalCosts) { }
+            column(TotalTotal; TotalFees + TotalQty) { }
             column(TotalTime; TotalQty) { }
         }
     }
@@ -173,12 +138,13 @@ report 50102 "WSB SLP Resource Time Summary"
 
         CompInfo: Record "Company Information";
         TaskDetail, DetailedEntries : Boolean;
-        TotalFees, TotalCosts, TotalQty : Decimal;
         Index: Integer;
         Values: Dictionary of [Integer, List of [Decimal]];
-        DisplayFee, DisplayCost, DisplayQty, FeePercent, TimePercent, CostPercent, TotalPercent : Decimal;
+        TotalFees, TotalQty, DisplayFee, DisplayQty : Decimal;
         Names: Dictionary of [Integer, List of [Text]];
-        DisplayName, DisplayNo, DisplayFeePer, DisplayTimePer, DisplayCostPer, DisplayTotalPer : Text;
+        DisplayName, DisplayNo : Text;
+
+
 
 
     trigger OnPreReport()
