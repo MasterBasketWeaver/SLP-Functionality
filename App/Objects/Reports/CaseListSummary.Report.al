@@ -82,12 +82,13 @@ report 50101 "WSB SLP Case List Summary"
                 JobList.Get(1, DisplayFee);
                 JobList.Get(2, DisplayCost);
                 JobList.Get(3, DisplayQty);
-                if TotalFees <> 0 then
-                    FeePercent := DisplayFee / TotalFees * 100;
+                Total := DisplayFee + DisplayCost;
+                if Total <> 0 then begin
+                    FeePercent := DisplayFee / Total * 100;
+                    CostPercent := DisplayCost / Total * 100;
+                end;
                 if TotalQty <> 0 then
                     TimePercent := DisplayQty / TotalQty * 100;
-                if TotalCosts <> 0 then
-                    CostPercent := DisplayCost / TotalCosts * 100;
                 Total := TotalFees + TotalCosts;
                 if Total <> 0 then
                     TotalPercent := (DisplayFee + DisplayCost) / (Total) * 100;
@@ -110,6 +111,25 @@ report 50101 "WSB SLP Case List Summary"
             column(TotalFees; TotalFees) { }
             column(TotalTotal; TotalFees + TotalCosts) { }
             column(TotalTime; TotalQty) { }
+            column(TotalFeePercent; DisplayFeePer) { }
+            column(TotalCostPercent; DisplayCostPer) { }
+            column(TotalOverallPercent; DisplayTotalPer) { }
+
+            trigger OnAfterGetRecord()
+            var
+                Total: Decimal;
+            begin
+                Total := TotalCosts + TotalFees;
+                if Total = 0 then
+                    exit;
+                FeePercent := TotalFees / Total * 100;
+                CostPercent := TotalCosts / Total * 100;
+                TotalPercent := 100;
+
+                DisplayFeePer := StrSubstNo('%1%', Round(FeePercent, 0.01));
+                DisplayCostPer := StrSubstNo('%1%', Round(CostPercent, 0.01));
+                DisplayTotalPer := StrSubstNo('%1%', Round(TotalPercent, 0.01));
+            end;
         }
     }
 
