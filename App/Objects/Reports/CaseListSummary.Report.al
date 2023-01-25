@@ -8,9 +8,14 @@ report 50101 "WSB SLP Case List Summary"
     {
         dataitem(Job; Job)
         {
-            RequestFilterFields = "No.";
             column(CurrDateTime; CurrentDateTime()) { }
             column(CompanyName; CompInfo.Name) { }
+
+            trigger OnPreDataItem()
+            begin
+                if JobNoFilter <> '' then
+                    SetFilter("No.", JobNoFilter);
+            end;
 
             trigger OnAfterGetRecord()
             var
@@ -139,28 +144,57 @@ report 50101 "WSB SLP Case List Summary"
         {
             area(Content)
             {
-                group(Options)
+                group("Filter: Matter")
                 {
-                    field(TaskDetail; TaskDetail)
+                    field(MatterFilter; JobNoFilter)
                     {
                         ApplicationArea = all;
-                        Caption = 'Task Detail';
-                        ToolTip = 'Specifies if the report displays information by Matter Task.';
+                        Caption = 'No.';
 
-                        trigger OnValidate()
+                        trigger OnLookup(var Text: Text): Boolean
+                        var
+                            Job: Record Job;
+                            JobList: Page "Job List";
+                            FilterTxt: TextBuilder;
                         begin
-                            if not TaskDetail then
-                                DetailedEntries := false;
+                            JobList.LookupMode(true);
+                            if JobList.RunModal() <> Action::LookupOK then
+                                exit;
+                            JobList.SetSelectionFilter(Job);
+                            if not Job.FindSet() then
+                                exit;
+                            FilterTxt.Append(Job."No.");
+                            if Job.Next() <> 0 then
+                                repeat
+                                    FilterTxt.Append('|' + Job."No.");
+                                until job.Next() = 0;
+                            JobNoFilter := FilterTxt.ToText();
                         end;
                     }
-                    field(DetailedEntries; DetailedEntries)
-                    {
-                        ApplicationArea = all;
-                        Caption = 'Detailed Entries';
-                        ToolTip = 'Specifies if the detailed entries are displayed for each Matter Task. Entries are grouped by Resource.';
-                        Enabled = TaskDetail;
-                    }
                 }
+
+                // group(Options)
+                // {
+                //     field(TaskDetail; TaskDetail)
+                //     {
+                //         ApplicationArea = all;
+                //         Caption = 'Task Detail';
+                //         ToolTip = 'Specifies if the report displays information by Matter Task.';
+
+                //         trigger OnValidate()
+                //         begin
+                //             if not TaskDetail then
+                //                 DetailedEntries := false;
+                //         end;
+                //     }
+                //     field(DetailedEntries; DetailedEntries)
+                //     {
+                //         ApplicationArea = all;
+                //         Caption = 'Detailed Entries';
+                //         ToolTip = 'Specifies if the detailed entries are displayed for each Matter Task. Entries are grouped by Resource.';
+                //         Enabled = TaskDetail;
+                //     }
+                // }
             }
         }
     }
@@ -168,13 +202,14 @@ report 50101 "WSB SLP Case List Summary"
     var
 
         CompInfo: Record "Company Information";
-        TaskDetail, DetailedEntries : Boolean;
+        // TaskDetail, DetailedEntries : Boolean;
         TotalFees, TotalCosts, TotalQty : Decimal;
         Index: Integer;
         Values: Dictionary of [Integer, List of [Decimal]];
         DisplayFee, DisplayCost, DisplayQty, FeePercent, TimePercent, CostPercent, TotalPercent : Decimal;
         Names: Dictionary of [Integer, List of [Text]];
         DisplayName, DisplayNo, DisplayFeePer, DisplayTimePer, DisplayCostPer, DisplayTotalPer : Text;
+        JobNoFilter: Text;
 
 
     trigger OnPreReport()
@@ -182,5 +217,9 @@ report 50101 "WSB SLP Case List Summary"
         CompInfo.Get();
     end;
 
-
+    procedure SetJobNoFilter(NewFilter: Text)
+    begin
+        if NewFilter <> '' then
+            JobNoFilter := NewFilter;
+    end;
 }

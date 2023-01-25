@@ -1,7 +1,5 @@
-pageextension 50101 "WSB SLP Matter List" extends "Project List (PGS)"
+pageextension 50102 "WSB SLP Job List" extends "Job List"
 {
-
-
     actions
     {
         addlast(reporting)
