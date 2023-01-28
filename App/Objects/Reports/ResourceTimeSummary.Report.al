@@ -16,25 +16,22 @@ report 50102 "WSB SLP Resource Time Summary"
             dataitem(Matter; Job)
             {
                 DataItemTableView = sorting(Description);
-                column(MatterNo; "No.") { }
-                column(MatterName; Description) { }
-                column(MatterQty; MatterValues[3]) { }
-                column(MatterCost; MatterValues[2]) { }
-                column(MatterPrice; MatterValues[1] + MatterValues[2]) { }
 
                 trigger OnPreDataItem()
                 begin
                     Clear(ResourceValues);
+                    Clear(MatterList);
+                    Clear(MatterDict);
+                    Clear(MatterCount);
                     if JobNoFilter <> '' then
                         SetFilter("No.", JobNoFilter);
                 end;
 
                 trigger OnAfterGetRecord()
                 var
-                    Resource2: Record Resource;
                     ProjectEntry: Record "Proj Detailed Led Entry (PGS)";
+                    ValueList: List of [Decimal];
                     i: Integer;
-                    AddValues: Boolean;
                 begin
                     Clear(MatterValues);
                     ProjectEntry.SetCurrentKey("Project No.", "Project Task No.", "Amount Type", "Entry Type", Positive, Chargeable, Type, "No.", "Resource Group No.", "Resource Sub Group No.", "Global Dimension 1 Code", "Global Dimension 2 Code", Payment, Expense, "Posting Date");
@@ -42,66 +39,42 @@ report 50102 "WSB SLP Resource Time Summary"
                     ProjectEntry.SetRange("Entry Type", ProjectEntry."Entry Type"::Usage);
                     ProjectEntry.SetRange(Type, ProjectEntry.Type::Resource);
                     ProjectEntry.SetRange("No.", Resource."No.");
-                    if not ShowZeroLines then
-                        ProjectEntry.SetFilter(Quantity, '<>%1', 0);
-                    if ProjectEntry.FindSet() then begin
-                        repeat
-                            MatterValues[1] += ProjectEntry."Total Price (LCY)";
-                            MatterValues[2] += ProjectEntry."Total Cost (LCY)";
-                            MatterValues[3] += ProjectEntry.Quantity;
-                        until ProjectEntry.Next() = 0;
-                        AddValues := true;
-                    end;
 
-                    if not MatterList.Contains(Matter."No.") then begin
-                        MatterList.Add(Matter."No.");
-                        ProjectEntry.SetRange("Entry Type", ProjectEntry."Entry Type"::Usage);
-                        ProjectEntry.SetRange(Type, ProjectEntry.Type::"G/L Account");
-                        ProjectEntry.SetRange("No.");
-                        ProjectEntry.SetRange(Expense, true);
-                        ProjectEntry.SetFilter("Expense Resource", '<>%1', '');
-                        ProjectEntry.SetFilter("Total Cost (LCY)", '<>%1', 0);
-                        ProjectEntry.SetFilter(Quantity, '<>%1', 0);
-                        if ProjectEntry.FindSet() then begin
-                            repeat
-                                if Resource2.Get(ProjectEntry."Expense Resource") then
-                                    if not TempResource.Get(ProjectEntry."Expense Resource") then begin
-                                        TempResource := Resource2;
-                                        TempResource."Unit Cost" := ProjectEntry."Total Cost (LCY)";
-                                        TempResource."Unit Price" := ProjectEntry.Quantity;
-                                        TempResource.Insert(false);
-                                    end else begin
-                                        TempResource."Unit Cost" += ProjectEntry."Total Cost (LCY)";
-                                        TempResource."Unit Price" += ProjectEntry.Quantity;
-                                        TempResource.Modify(false);
-                                    end;
-                            until ProjectEntry.Next() = 0;
-                            AddValues := true;
-                        end;
-                    end;
+                    if not ProjectEntry.FindSet() then
+                        exit;
+                    repeat
+                        MatterValues[1] += ProjectEntry."Total Price (LCY)";
+                        MatterValues[2] += ProjectEntry."Total Cost (LCY)";
+                        MatterValues[3] += ProjectEntry.Quantity;
+                    until ProjectEntry.Next() = 0;
 
-                    if AddValues then
-                        for i := 1 to ArrayLen(MatterValues) do
-                            ResourceValues[i] += MatterValues[i];
+                    MatterCount += 1;
+                    MatterList.Add(Matter.Description);
+                    ValueList.Add(MatterValues[1]);
+                    ValueList.Add(MatterValues[2]);
+                    ValueList.Add(MatterValues[3]);
+                    MatterDict.Add(MatterCount, ValueList);
+                    for i := 1 to ArrayLen(MatterValues) do
+                        ResourceValues[i] += MatterValues[i];
                 end;
-            }
 
-
-
-            dataitem(derp; Integer)
-            {
-                DataItemTableView = sorting(Number) where(Number = const(1));
-
-                column(ResourceQty; ResourceValues[3]) { }
-                column(ResourceCost; ResourceValues[2]) { }
-                column(ResourcePrice; ResourceValues[1] + ResourceValues[2]) { }
-
-                trigger OnAfterGetRecord()
+                trigger OnPostDataItem()
                 var
-                    i: Integer;
+                    ValueList: List of [Decimal];
                 begin
-                    for i := 1 to ArrayLen(ResourceValues) do
-                        TotalValues[i] += ResourceValues[i];
+                    if (MatterCount = 0) or
+                            (ResourceValues[1] = 0) and (ResourceValues[2] = 0) and (ResourceValues[3] = 0) then
+                        exit;
+
+                    ResourceCount += 1;
+                    ResourceList.Add(StrSubstNo('%1 - %2', Resource."No.", Resource.Name));
+                    ValueList.Add(ResourceValues[1]);
+                    ValueList.Add(ResourceValues[2]);
+                    ValueList.Add(ResourceValues[3]);
+                    ValueList.Add(MatterCount);
+                    ResourceDict.Add(ResourceCount, ValueList);
+                    MatterDictList.Add(MatterDict);
+                    MatterListList.Add(MatterList);
                 end;
             }
 
@@ -111,34 +84,75 @@ report 50102 "WSB SLP Resource Time Summary"
                     SetFilter("No.", ResourceNoFilter);
             end;
         }
-        dataitem(ExpenseResource; Integer)
+
+
+        dataitem(ResourceDisplay; Integer)
         {
-            column(ExpResourceNo; TempResource."No.") { }
-            column(ExpResourceName; TempResource.Name) { }
-            column(ExpResourceQty; TempResource."Unit Price") { }
-            column(ExpResourceCost; TempResource."Unit Cost") { }
+            column(ResourceDesc; ResourceDescription) { }
+            column(ResourceQty; ResourceValues[3]) { }
+            column(ResourcePrice; ResourceValues[1] + ResourceValues[2]) { }
+
+            dataitem(MatterDisplay; Integer)
+            {
+                column(MatterDesc; MatterDescription) { }
+                column(MatterQty; MatterValues[3]) { }
+                column(MatterPrice; MatterValues[1] + MatterValues[2]) { }
+
+                trigger OnPreDataItem()
+                begin
+                    SetRange(Number, 1, MatterCount);
+                end;
+
+                trigger OnAfterGetRecord()
+                var
+                    ValueList: List of [Decimal];
+                    i: Integer;
+                begin
+                    MatterList.Get(Number, MatterDescription);
+                    MatterDict.Get(Number, ValueList);
+                    for i := 1 to ArrayLen(MatterValues) do
+                        ValueList.Get(i, MatterValues[i]);
+                end;
+            }
+
+            // dataitem(ResourceTotal; Integer)
+            // {
+            //     DataItemTableView = sorting(Number) where(Number = const(1));
+
+            //     column(ResourceQty; ResourceValues[3]) { }
+            //     column(ResourceCost; ResourceValues[2]) { }
+            //     column(ResourcePrice; ResourceValues[1] + ResourceValues[2]) { }
+
+            //     trigger OnAfterGetRecord()
+            //     var
+            //         i: Integer;
+            //     begin
+            //         for i := 1 to ArrayLen(ResourceValues) do
+            //             TotalValues[i] += ResourceValues[i];
+            //     end;
+            // }
 
             trigger OnPreDataItem()
             begin
-                SetRange(Number, 1, TempResource.Count());
+                SetRange(Number, 1, ResourceCount);
             end;
 
             trigger OnAfterGetRecord()
+            var
+                ValueList: List of [Decimal];
+                TempDec: Decimal;
+                i: Integer;
             begin
-                if Number = 1 then
-                    TempResource.FindSet()
-                else
-                    TempResource.Next();
-                TotalValues[2] += TempResource."Unit Cost";
-                TotalValues[3] += TempResource."Unit Price";
-                // if not Confirm(StrSubstNo('%1: %2, %3 -> %4, %5', TempResource."No.", TempResource."Unit Cost", TempResource."Unit Price", TotalValues[2], TotalValues[3])) then
-                //     Error('');
-            end;
-
-            trigger OnPostDataItem()
-            begin
-                TempResource.Reset();
-                TempResource.DeleteAll();
+                ResourceList.Get(Number, ResourceDescription);
+                ResourceDict.Get(Number, ValueList);
+                for i := 1 to ArrayLen(ResourceValues) do begin
+                    ValueList.Get(i, ResourceValues[i]);
+                    TotalValues[i] += ResourceValues[i];
+                end;
+                ValueList.Get(4, TempDec);
+                MatterCount := Round(TempDec);
+                MatterListList.Get(Number, MatterList);
+                MatterDictList.Get(Number, MatterDict);
             end;
         }
 
@@ -160,14 +174,6 @@ report 50102 "WSB SLP Resource Time Summary"
         {
             area(Content)
             {
-                // group(Options)
-                // {
-                //     field(ShowZeroLines; ShowZeroLines)
-                //     {
-                //         ApplicationArea = all;
-                //         Caption = 'Show Zero Lines';
-                //     }
-                // }
                 group("Filter: Matter")
                 {
                     field(MatterFilter; JobNoFilter)
@@ -228,14 +234,17 @@ report 50102 "WSB SLP Resource Time Summary"
         }
     }
 
-    var
 
+    var
         CompInfo: Record "Company Information";
-        TaskDetail, DetailedEntries, ShowZeroLines : Boolean;
-        MatterValues, ResourceValues, TotalValues : array[3] of Decimal;
-        JobNoFilter, ResourceNoFilter : Text;
-        TempResource: Record Resource temporary;
-        MatterList: List of [Code[20]];
+
+        MatterDictList: List of [Dictionary of [Integer, List of [Decimal]]];
+        MatterListList: List of [List of [Text]];
+        ResourceDict, MatterDict : Dictionary of [Integer, List of [Decimal]];
+        ResourceList, MatterList : List of [Text];
+        JobNoFilter, ResourceNoFilter, ResourceDescription, MatterDescription : Text;
+        ResourceValues, MatterValues, TotalValues : array[3] of Decimal;
+        ResourceCount, MatterCount : Integer;
 
 
 
