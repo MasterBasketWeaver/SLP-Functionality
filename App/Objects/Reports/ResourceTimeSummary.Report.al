@@ -115,23 +115,6 @@ report 50102 "WSB SLP Resource Time Summary"
                 end;
             }
 
-            // dataitem(ResourceTotal; Integer)
-            // {
-            //     DataItemTableView = sorting(Number) where(Number = const(1));
-
-            //     column(ResourceQty; ResourceValues[3]) { }
-            //     column(ResourceCost; ResourceValues[2]) { }
-            //     column(ResourcePrice; ResourceValues[1] + ResourceValues[2]) { }
-
-            //     trigger OnAfterGetRecord()
-            //     var
-            //         i: Integer;
-            //     begin
-            //         for i := 1 to ArrayLen(ResourceValues) do
-            //             TotalValues[i] += ResourceValues[i];
-            //     end;
-            // }
-
             trigger OnPreDataItem()
             begin
                 SetRange(Number, 1, ResourceCount);
@@ -183,22 +166,13 @@ report 50102 "WSB SLP Resource Time Summary"
 
                         trigger OnLookup(var Text: Text): Boolean
                         var
-                            Job: Record Job;
-                            JobList: Page "Job List";
+                            JobList: Page "WSB SLP Select Matter";
                             FilterTxt: TextBuilder;
                         begin
                             JobList.LookupMode(true);
-                            if JobList.RunModal() <> Action::LookupOK then
-                                exit;
-                            JobList.SetSelectionFilter(Job);
-                            if not Job.FindSet() then
-                                exit;
-                            FilterTxt.Append(Job."No.");
-                            if Job.Next() <> 0 then
-                                repeat
-                                    FilterTxt.Append('|' + Job."No.");
-                                until job.Next() = 0;
-                            JobNoFilter := FilterTxt.ToText();
+                            JobList.Editable(true);
+                            if JobList.RunModal() = Action::LookupOK then
+                                JobNoFilter := JobList.GetSelectedFilter();
                         end;
                     }
                 }
@@ -211,22 +185,13 @@ report 50102 "WSB SLP Resource Time Summary"
 
                         trigger OnLookup(var Text: Text): Boolean
                         var
-                            Resource: Record Resource;
-                            ResourceList: Page "Resource List";
+                            ResourceList: Page "WSB SLP Select Resource";
                             FilterTxt: TextBuilder;
                         begin
+                            ResourceList.Editable(true);
                             ResourceList.LookupMode(true);
-                            if ResourceList.RunModal() <> Action::LookupOK then
-                                exit;
-                            ResourceList.SetSelectionFilter(Resource);
-                            if not Resource.FindSet() then
-                                exit;
-                            FilterTxt.Append(Resource."No.");
-                            if Resource.Next() <> 0 then
-                                repeat
-                                    FilterTxt.Append('|' + Resource."No.");
-                                until Resource.Next() = 0;
-                            ResourceNoFilter := FilterTxt.ToText();
+                            if ResourceList.RunModal() = Action::LookupOK then
+                                ResourceNoFilter := ResourceList.GetSelectedFilter();
                         end;
                     }
                 }
@@ -237,7 +202,6 @@ report 50102 "WSB SLP Resource Time Summary"
 
     var
         CompInfo: Record "Company Information";
-
         MatterDictList: List of [Dictionary of [Integer, List of [Decimal]]];
         MatterListList: List of [List of [Text]];
         ResourceDict, MatterDict : Dictionary of [Integer, List of [Decimal]];

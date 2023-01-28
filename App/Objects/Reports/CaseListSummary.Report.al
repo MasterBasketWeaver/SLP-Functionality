@@ -153,48 +153,16 @@ report 50101 "WSB SLP Case List Summary"
 
                         trigger OnLookup(var Text: Text): Boolean
                         var
-                            Job: Record Job;
-                            JobList: Page "Job List";
+                            JobList: Page "WSB SLP Select Matter";
                             FilterTxt: TextBuilder;
                         begin
                             JobList.LookupMode(true);
-                            if JobList.RunModal() <> Action::LookupOK then
-                                exit;
-                            JobList.SetSelectionFilter(Job);
-                            if not Job.FindSet() then
-                                exit;
-                            FilterTxt.Append(Job."No.");
-                            if Job.Next() <> 0 then
-                                repeat
-                                    FilterTxt.Append('|' + Job."No.");
-                                until job.Next() = 0;
-                            JobNoFilter := FilterTxt.ToText();
+                            JobList.Editable(true);
+                            if JobList.RunModal() = Action::LookupOK then
+                                JobNoFilter := JobList.GetSelectedFilter();
                         end;
                     }
                 }
-
-                // group(Options)
-                // {
-                //     field(TaskDetail; TaskDetail)
-                //     {
-                //         ApplicationArea = all;
-                //         Caption = 'Task Detail';
-                //         ToolTip = 'Specifies if the report displays information by Matter Task.';
-
-                //         trigger OnValidate()
-                //         begin
-                //             if not TaskDetail then
-                //                 DetailedEntries := false;
-                //         end;
-                //     }
-                //     field(DetailedEntries; DetailedEntries)
-                //     {
-                //         ApplicationArea = all;
-                //         Caption = 'Detailed Entries';
-                //         ToolTip = 'Specifies if the detailed entries are displayed for each Matter Task. Entries are grouped by Resource.';
-                //         Enabled = TaskDetail;
-                //     }
-                // }
             }
         }
     }
@@ -202,14 +170,14 @@ report 50101 "WSB SLP Case List Summary"
     var
 
         CompInfo: Record "Company Information";
-        // TaskDetail, DetailedEntries : Boolean;
-        TotalFees, TotalCosts, TotalQty : Decimal;
-        Index: Integer;
-        Values: Dictionary of [Integer, List of [Decimal]];
-        DisplayFee, DisplayCost, DisplayQty, FeePercent, TimePercent, CostPercent, TotalPercent : Decimal;
         Names: Dictionary of [Integer, List of [Text]];
         DisplayName, DisplayNo, DisplayFeePer, DisplayTimePer, DisplayCostPer, DisplayTotalPer : Text;
         JobNoFilter: Text;
+        Values: Dictionary of [Integer, List of [Decimal]];
+        DisplayFee, DisplayCost, DisplayQty, FeePercent, TimePercent, CostPercent, TotalPercent : Decimal;
+        TotalFees, TotalCosts, TotalQty : Decimal;
+        Index: Integer;
+
 
 
     trigger OnPreReport()
