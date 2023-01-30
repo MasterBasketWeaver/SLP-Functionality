@@ -7,5 +7,11 @@ tableextension 50110 "WSB SLP Job" extends Job
             DataClassification = CustomerContent;
             Caption = 'Selected';
         }
+        field(50101; "WSB SLP Marked"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            Caption = 'Marked';
+            Editable = false;
+        }
     }
 }

@@ -7,5 +7,11 @@ tableextension 50111 "WSB SLP Resource" extends Resource
             DataClassification = CustomerContent;
             Caption = 'Selected';
         }
+        field(50101; "WSB SLP Marked"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            Caption = 'Marked';
+            Editable = false;
+        }
     }
 }
